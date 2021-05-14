@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -25,11 +26,24 @@ public class MainActivity extends AppCompatActivity {
         mBtnDownload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new DownloadThread().execute( (String[] )null );
+
+                String [] urls = {
+                        "https://bitcode.in/java/file1.java",
+                        "https://bitcode.in/java/file2.java",
+                        "https://bitcode.in/java/file3.java",
+                        "https://bitcode.in/java/file4.java",
+                };
+
+                new DownloadThread().execute( urls );
             }
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        Toast.makeText(this, "onDestroy", Toast.LENGTH_LONG).show();
+        super.onDestroy();
+    }
 
     class DownloadThread extends AsyncTask<String, Integer, Float> {
 
@@ -43,35 +57,60 @@ public class MainActivity extends AppCompatActivity {
             mProgressDialog.setTitle("BitCode Services");
             mProgressDialog.setMessage("Downloading....");
             mProgressDialog.setIcon(R.mipmap.ic_launcher);
-            //mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            //mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
             mProgressDialog.show();
+
         }
 
         @Override
-        protected Float doInBackground(String... strings) {
+        protected Float doInBackground(String ... urls) {
 
             mt("doInBG Thread: " + Thread.currentThread().getName() );
+            int curProgress = 0;
 
-            for(int i = 0; i <= 100; i++) {
-                mt("Downloading: " + i + "%");
-                mProgressDialog.setProgress(i);
-                //mBtnDownload.setText(i+"%");
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            for(String url : urls) {
+
+                String [] parts = url.split("/");
+
+                for (int i = 0; i <= 100; i++) {
+                    mt("Downloading: " + parts[parts.length-1]);
+                    mProgressDialog.setSecondaryProgress(i);
+                    //mBtnDownload.setText(i+"%");
+                    curProgress += curProgress + i;
+                    mProgressDialog.setProgress( curProgress/url.length());
+
+                    Integer [] progress = new Integer[2];
+                    progress[0] = curProgress;
+                    progress[1] = i;
+                    publishProgress(progress);
+
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
+
+                //curProgress += (100/urls.length);
+                //mProgressDialog.setProgress( curProgress);
             }
 
-            return null;
+            return 12.12F;
         }
 
         @Override
-        protected void onPostExecute(Float aFloat) {
-            super.onPostExecute(aFloat);
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+            mBtnDownload.setText("Pri: " + progress[0]  + " Sec: " + progress[1]);
+        }
+
+        @Override
+        protected void onPostExecute(Float res) {
+            super.onPostExecute(res);
             mt("OnPost Thread: " + Thread.currentThread().getName() );
             mProgressDialog.dismiss();
+            mBtnDownload.setText(res + "");
         }
     }
 
